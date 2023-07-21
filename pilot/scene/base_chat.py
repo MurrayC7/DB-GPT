@@ -124,6 +124,7 @@ class BaseChat(ABC):
             "max_new_tokens": int(self.prompt_template.max_new_tokens),
             "stop": self.prompt_template.sep,
         }
+        print(payload)
         return payload
 
     def stream_call(self):

@@ -81,13 +81,17 @@ class SystemMessage(BaseMessage):
         return "system"
 
 
-class ModelMessage(BaseModel):
+class ModelMessage(BaseMessage):
     """Type of message that interaction between dbgpt-server and llm-server"""
 
     """Similar to openai's message format"""
     role: str
     content: str
 
+    @property
+    def type(self) -> str:
+        """Type of the message, used for serialization."""
+        return "model"
 
 class ModelMessageRoleType:
     """ "Type of ModelMessage role"""

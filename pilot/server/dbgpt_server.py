@@ -1,18 +1,13 @@
-import atexit
-import traceback
 import os
-import shutil
 import argparse
 import sys
-
+os.environ["http_proxy"] = "http://127.0.0.1:7890"
+os.environ["https_proxy"] = "http://127.0.0.1:7890"
 ROOT_PATH = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.append(ROOT_PATH)
 import signal
 from pilot.configs.config import Config
 from pilot.configs.model_config import (
-    DATASETS_DIR,
-    KNOWLEDGE_UPLOAD_ROOT_PATH,
-    LLM_MODEL_CONFIG,
     LOGDIR,
 )
 from pilot.utils import build_logger
