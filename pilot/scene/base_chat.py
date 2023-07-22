@@ -124,7 +124,7 @@ class BaseChat(ABC):
             "max_new_tokens": int(self.prompt_template.max_new_tokens),
             "stop": self.prompt_template.sep,
         }
-        print(payload)
+        # print(payload)
         return payload
 
     def stream_call(self):
@@ -142,6 +142,7 @@ class BaseChat(ABC):
                     json=payload,
                     stream=True,
                     timeout=120,
+                    proxies={"http": "http://127.0.0.1:7890", "https": "https://127.0.0.1:7890"}
                 )
                 return response
             else:
@@ -169,6 +170,7 @@ class BaseChat(ABC):
                     headers=headers,
                     json=payload,
                     timeout=120,
+                    proxies={"http": "http://127.0.0.1:7890", "https": "https://127.0.0.1:7890"}
                 )
                 rsp_str = rsp_obj.text
             else:
