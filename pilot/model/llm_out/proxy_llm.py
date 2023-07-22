@@ -54,7 +54,8 @@ def proxyllm_generate_stream(model, tokenizer, params, device, context_len=2048)
     }
 
     res = requests.post(
-        CFG.proxy_server_url, headers=headers, json=payloads, stream=True
+        CFG.proxy_server_url, headers=headers, json=payloads, stream=True,
+        proxies={"http": "http://127.0.0.1:7890", "https": "https://127.0.0.1:7890"}
     )
 
     text = ""
