@@ -45,6 +45,7 @@ class Config(metaclass=Singleton):
 
         # This is a proxy server, just for test_py.  we will remove this later.
         self.proxy_api_key = os.getenv("PROXY_API_KEY")
+        self.bard_proxy_api_key = os.getenv("BARD_PROXY_API_KEY")
         self.proxy_server_url = os.getenv("PROXY_SERVER_URL")
 
         self.elevenlabs_api_key = os.getenv("ELEVENLABS_API_KEY")
@@ -131,6 +132,13 @@ class Config(metaclass=Singleton):
 
         ### LLM Model Service Configuration
         self.LLM_MODEL = os.getenv("LLM_MODEL", "vicuna-13b")
+        ### Proxy llm backend, this configuration is only valid when "LLM_MODEL=proxyllm"
+        ### When we use the rest API provided by deployment frameworks like fastchat as a proxyllm, "PROXYLLM_BACKEND" is the model they actually deploy.
+        ### We need to use "PROXYLLM_BACKEND" to load the prompt of the corresponding scene.
+        self.PROXYLLM_BACKEND = None
+        if self.LLM_MODEL == "proxyllm":
+            self.PROXYLLM_BACKEND = os.getenv("PROXYLLM_BACKEND")
+
         self.LIMIT_MODEL_CONCURRENCY = int(os.getenv("LIMIT_MODEL_CONCURRENCY", 5))
         self.MAX_POSITION_EMBEDDINGS = int(os.getenv("MAX_POSITION_EMBEDDINGS", 4096))
         self.MODEL_PORT = os.getenv("MODEL_PORT", 8000)

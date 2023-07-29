@@ -46,10 +46,19 @@ LLM_MODEL_CONFIG = {
     "falcon-40b": os.path.join(MODEL_PATH, "falcon-40b"),
     "gorilla-7b": os.path.join(MODEL_PATH, "gorilla-7b"),
     "gptj-6b": os.path.join(MODEL_PATH, "ggml-gpt4all-j-v1.3-groovy.bin"),
-    "proxyllm": "proxyllm",
+    "proxyllm": "chatgpt_proxyllm",
+    "chatgpt_proxyllm": "chatgpt_proxyllm",
+    "bard_proxyllm": "bard_proxyllm",
+    "claude_proxyllm": "claude_proxyllm",
+    "wenxin_proxyllm": "wenxin_proxyllm",
+    "tongyi_proxyllm": "tongyi_proxyllm",
+    "gpt4_proxyllm": "gpt4_proxyllm",
     "llama-2-7b": os.path.join(MODEL_PATH, "Llama-2-7b-chat-hf"),
     "llama-2-13b": os.path.join(MODEL_PATH, "Llama-2-13b-chat-hf"),
     "llama-2-70b": os.path.join(MODEL_PATH, "Llama-2-70b-chat-hf"),
+    "baichuan-13b": os.path.join(MODEL_PATH, "Baichuan-13B-Chat"),
+    # please rename "fireballoon/baichuan-vicuna-chinese-7b" to "baichuan-7b"
+    "baichuan-7b": os.path.join(MODEL_PATH, "baichuan-7b"),
 }
 
 # Load model config
