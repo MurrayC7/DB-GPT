@@ -1,15 +1,19 @@
 import os
 import argparse
 import sys
-# os.environ["http_proxy"] = "http://127.0.0.1:7890"
-# os.environ["https_proxy"] = "http://127.0.0.1:7890"
+import logging
+
 ROOT_PATH = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.append(ROOT_PATH)
 import signal
 from pilot.configs.config import Config
-from pilot.configs.model_config import (
-    LOGDIR,
-)
+
+# from pilot.configs.model_config import (
+#     DATASETS_DIR,
+#     KNOWLEDGE_UPLOAD_ROOT_PATH,
+#     LLM_MODEL_CONFIG,
+#     LOGDIR,
+# )
 from pilot.utils import build_logger
 
 from pilot.server.webserver_base import server_init
@@ -25,11 +29,13 @@ from pilot.server.knowledge.api import router as knowledge_router
 from pilot.openapi.api_v1.api_v1 import router as api_v1, validation_exception_handler
 
 
+logging.basicConfig(level=logging.INFO)
+
 static_file_path = os.path.join(os.getcwd(), "server/static")
 
 
 CFG = Config()
-logger = build_logger("webserver", LOGDIR + "webserver.log")
+# logger = build_logger("webserver", LOGDIR + "webserver.log")
 
 
 def signal_handler():
@@ -108,5 +114,6 @@ if __name__ == "__main__":
 
     import uvicorn
 
-    uvicorn.run(app, host="0.0.0.0", port=args.port)
+    logging.basicConfig(level=logging.INFO)
+    uvicorn.run(app, host="0.0.0.0", port=args.port, log_level=0)
     signal.signal(signal.SIGINT, signal_handler())
