@@ -50,6 +50,9 @@ DB-GPT is an experimental open-source project that uses localized GPT large mode
 - [roadmap](#roadmap)
 - [contract](#contact-information)
 
+[DB-GPT Youtube Video](https://www.youtube.com/watch?v=f5_g0OObZBQ)
+
+
 ## Demo
 
 Run on an RTX 4090 GPU.
@@ -59,6 +62,27 @@ https://github.com/csunny/DB-GPT/assets/13723926/55f31781-1d49-4757-b96e-7ef6d3d
 <!-- <video id="video" controls="" preload="auto" poster="assets/exector_sql.png">
       <source id="mp4" src="https://github.com/csunny/DB-GPT/assets/17919400/654b5a49-5ea4-4c02-b5b2-72d089dcc1f0" type="video/mp4">
 </videos> -->
+
+#### Chat with data, and figure charts.
+
+<p align="left">
+  <img src="./assets/dashboard.png" width="800px" />
+</p>
+
+#### Text2SQL, generate SQL from chat
+<p align="left">
+  <img src="./assets/chatdata.png" width="800px" />
+</p>
+
+#### Knowledge space to manage docs.
+<p align="left">
+  <img src="./assets/ks.png" width="800px" />
+</p>
+
+#### Chat with knowledge, such as url, pdf, csv, word. etc
+<p align="left">
+  <img src="./assets/chat_knowledge.png" width="800px" />
+</p>
 
 ## Features
 
@@ -82,13 +106,18 @@ Currently, we have released multiple key features, which are listed below to dem
   - Support for unstructured data such as PDF, TXT, Markdown, CSV, DOC, PPT, and WebURL
 
 - Multi LLMs Support, Supports multiple large language models, currently supporting
+  - 🔥 Vicuna-v1.5(7b,13b)
   - 🔥 llama-2(7b,13b,70b)
+  - WizardLM-v1.2(13b)
   - Vicuna (7b,13b)
   - ChatGLM-6b (int4,int8)
   - ChatGLM2-6b (int4,int8)
   - guanaco(7b,13b,33b)
   - Gorilla(7b,13b)
   - baichuan(7b,13b)
+
+[![Star History Chart](https://api.star-history.com/svg?repos=csunny/DB-GPT)](https://star-history.com/#csunny/DB-GPT)
+
 
 ## Introduction 
 DB-GPT creates a vast model operating system using [FastChat](https://github.com/lm-sys/FastChat) and offers a large language model powered by [Vicuna](https://huggingface.co/Tribbiani/vicuna-7b). In addition, we provide private domain knowledge base question-answering capability. Furthermore, we also provide support for additional plugins, and our design natively supports the Auto-GPT plugin.Our vision is to make it easier and more convenient to build  applications around databases and llm.
