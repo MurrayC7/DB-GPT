@@ -1,0 +1,129 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2023, csunny
+# This file is distributed under the same license as the DB-GPT package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2023.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: DB-GPT 👏👏 0.3.5\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2023-08-18 17:49+0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: zh_CN\n"
+"Language-Team: zh_CN <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.12.1\n"
+
+#: ../../getting_started/application/chatdb/chatdb.md:1
+#: 7bb2659a189b4d8ea9e24b4d7911759e
+msgid "ChatData & ChatDB"
+msgstr "ChatData & ChatDB"
+
+#: ../../getting_started/application/chatdb/chatdb.md:3
+#: 90784ed8f40c49e09fb91a0918b056cf
+msgid ""
+"ChatData generates SQL from natural language and executes it. ChatDB "
+"involves conversing with metadata from the Database, including metadata "
+"about databases, tables, and fields.![db plugins "
+"demonstration](../../../../assets/chat_data/chat_data.jpg)"
+msgstr ""
+"ChatData 是会将自然语言生成SQL，并将其执行。ChatDB是与Database里面的元数据，包括库、表、字段的元数据进行对话.![db "
+"plugins demonstration](../../../../assets/chat_data/chat_data.jpg)"
+
+#: ../../getting_started/application/chatdb/chatdb.md:3
+#: ../../getting_started/application/chatdb/chatdb.md:14
+#: ../../getting_started/application/chatdb/chatdb.md:16
+#: ../../getting_started/application/chatdb/chatdb.md:18
+#: ../../getting_started/application/chatdb/chatdb.md:20
+#: ../../getting_started/application/chatdb/chatdb.md:24
+#: 2af94cf92f7d4b7382aa9878a51a53f3 4858db05f4094aec93c0582546a7d76b
+msgid "db plugins demonstration"
+msgstr "db plugins demonstration"
+
+#: ../../getting_started/application/chatdb/chatdb.md:4
+#: 96cec2f2107a4d99a9e94aed789e2344
+msgid "1.Choose Datasource"
+msgstr "1.Choose Datasource"
+
+#: ../../getting_started/application/chatdb/chatdb.md:5
+#: 25bd983e3b2f413c9cb2c04cc1631313
+msgid ""
+"If you are using DB-GPT for the first time, you need to add a data source"
+" and set the relevant connection information for the data source."
+msgstr "如果你是第一次使用DB-GPT, 首先需要添加数据源，设置数据源的相关连接信息"
+
+#: ../../getting_started/application/chatdb/chatdb.md:8
+#: 32c6bcabfdd14269b0ca04f2723c4745
+msgid "there are some example data in DB-GPT-NEW/DB-GPT/docker/examples"
+msgstr "在DB-GPT-NEW/DB-GPT/docker/examples有数据示例"
+
+#: ../../getting_started/application/chatdb/chatdb.md:10
+#: f582ded883b34b208af7ba44dd1d7a87
+msgid "you can execute sql script to generate data."
+msgstr "你可以通过执行sql脚本生成测试数据"
+
+#: ../../getting_started/application/chatdb/chatdb.md:13
+#: 77e5025ea41b4d2997172ef847cc94c0
+msgid "1.1 Datasource management"
+msgstr "1.1 Datasource management"
+
+#: ../../getting_started/application/chatdb/chatdb.md:14
+#: 7a94c5d8f1d24cb28ecb933f63ea1bf0
+msgid "![db plugins demonstration](../../../../assets/chat_data/db_entry.png)"
+msgstr "![db plugins demonstration](../../../../assets/chat_data/db_entry.png)"
+
+#: ../../getting_started/application/chatdb/chatdb.md:15
+#: ba5b3576317749d9bdcd6c4e2a7eee51
+msgid "1.2 Connection management"
+msgstr "1.2 Connection管理"
+
+#: ../../getting_started/application/chatdb/chatdb.md:16
+#: 79114a69a61642c6970358629340263b
+msgid "![db plugins demonstration](../../../../assets/chat_data/db_connect.png)"
+msgstr "![db plugins demonstration](../../../../assets/chat_data/db_connect.png)"
+
+#: ../../getting_started/application/chatdb/chatdb.md:17
+#: baaae5e3320742ea8def1144144ec2e0
+msgid "1.3 Add Datasource"
+msgstr "1.3 添加Datasource"
+
+#: ../../getting_started/application/chatdb/chatdb.md:18
+#: 68dee774bfcd4c39ab9081c911d4af26
+msgid ""
+"![db plugins "
+"demonstration](../../../../assets/chat_data/add_datasource.png)"
+msgstr ""
+"![db plugins "
+"demonstration](../../../../assets/chat_data/add_datasource.png)"
+
+#: ../../getting_started/application/chatdb/chatdb.md:19
+#: 30df69cad4fe41da8d1aefe0b8f7b963
+msgid "2.ChatData"
+msgstr "2.ChatData"
+
+#: ../../getting_started/application/chatdb/chatdb.md:20
+#: a2f838d667b24ad9a70bb21d5f47dd55
+msgid ""
+"After successfully setting up the data source, you can start conversing "
+"with the database. You can ask it to generate SQL for you or inquire "
+"about relevant information on the database's metadata. ![db plugins "
+"demonstration](../../../../assets/chat_data/chatdata_eg.png)"
+msgstr ""
+"设置数据源成功后就可以和数据库进行对话了。你可以让它帮你生成SQL，也可以和问它数据库元数据的相关信息。 ![db plugins "
+"demonstration](../../../../assets/chat_data/chatdata_eg.png)"
+
+#: ../../getting_started/application/chatdb/chatdb.md:23
+#: eaa6f5302da242c7a41346610f7234e8
+msgid "3.ChatDB"
+msgstr "3.ChatDB"
+
+#: ../../getting_started/application/chatdb/chatdb.md:24
+#: 217eefe88eb5425fb8cb481df133157c
+msgid "![db plugins demonstration](../../../../assets/chat_data/chatdb_eg.png)"
+msgstr "![db plugins demonstration](../../../../assets/chat_data/chatdb_eg.png)"
+
