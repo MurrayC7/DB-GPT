@@ -99,6 +99,7 @@ class ModelMessageRoleType:
     SYSTEM = "system"
     HUMAN = "human"
     AI = "ai"
+    VIEW = "view"
 
 
 class Generation(BaseModel):
