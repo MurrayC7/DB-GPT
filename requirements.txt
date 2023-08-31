@@ -76,3 +76,6 @@ bardapi==0.1.29
 pymysql
 duckdb
 duckdb-engine
+
+# cli
+prettytable
