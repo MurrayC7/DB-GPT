@@ -3,6 +3,7 @@
 
 import os
 import re
+import logging
 from pathlib import Path
 from typing import List, Tuple, Callable, Type
 from functools import cache
@@ -19,8 +20,8 @@ from pilot.model.parameter import (
 )
 from pilot.configs.model_config import get_device
 from pilot.configs.config import Config
-from pilot.logs import logger
 
+logger = logging.getLogger(__name__)
 
 CFG = Config()
 
@@ -96,16 +97,40 @@ def get_llm_model_adapter(model_name: str, model_path: str) -> BaseLLMAdaper:
 
 def _dynamic_model_parser() -> Callable[[None], List[Type]]:
     from pilot.utils.parameter_utils import _SimpleArgParser
+    from pilot.model.parameter import (
+        EmbeddingModelParameters,
+        WorkerType,
+        EMBEDDING_NAME_TO_PARAMETER_CLASS_CONFIG,
+    )
 
-    pre_args = _SimpleArgParser("model_name", "model_path")
+    pre_args = _SimpleArgParser("model_name", "model_path", "worker_type")
     pre_args.parse()
     model_name = pre_args.get("model_name")
     model_path = pre_args.get("model_path")
+    worker_type = pre_args.get("worker_type")
     if model_name is None:
         return None
+    if worker_type == WorkerType.TEXT2VEC:
+        return [
+            EMBEDDING_NAME_TO_PARAMETER_CLASS_CONFIG.get(
+                model_name, EmbeddingModelParameters
+            )
+        ]
+
     llm_adapter = get_llm_model_adapter(model_name, model_path)
     param_class = llm_adapter.model_param_class()
     return [param_class]
+
+
+def _parse_model_param_class(model_name: str, model_path: str) -> ModelParameters:
+    try:
+        llm_adapter = get_llm_model_adapter(model_name, model_path)
+        return llm_adapter.model_param_class()
+    except Exception as e:
+        logger.warn(
+            f"Parse model parameters with model name {model_name} and model {model_path} failed {str(e)}, return `ModelParameters`"
+        )
+        return ModelParameters
 
 
 # TODO support cpu? for practise we support gpt4all or chatglm-6b-int4?
@@ -357,14 +382,14 @@ class LlamaCppAdapater(BaseLLMAdaper):
             # Just support local model
             return False, None
         if not path.is_file():
-            model_paths = list(path.glob("*ggml*.bin"))
+            model_paths = list(path.glob("*ggml*.gguf"))
             if not model_paths:
                 return False
             model_path = str(model_paths[0])
             logger.warn(
-                f"Model path {model_path} is not single file, use first *gglm*.bin model file: {model_path}"
+                f"Model path {model_path} is not single file, use first *gglm*.gguf model file: {model_path}"
             )
-        if not re.fullmatch(".*ggml.*\.bin", model_path):
+        if not re.fullmatch(".*ggml.*\.gguf", model_path):
             return False, None
         return True, model_path
 
@@ -395,6 +420,29 @@ class LlamaCppAdapater(BaseLLMAdaper):
         return model, tokenizer
 
 
+class InternLMAdapter(BaseLLMAdaper):
+    """The model adapter for internlm/internlm-chat-7b"""
+
+    def match(self, model_path: str):
+        return "internlm" in model_path.lower()
+
+    def loader(self, model_path: str, from_pretrained_kwargs: dict):
+        revision = from_pretrained_kwargs.get("revision", "main")
+        model = AutoModelForCausalLM.from_pretrained(
+            model_path,
+            low_cpu_mem_usage=True,
+            trust_remote_code=True,
+            **from_pretrained_kwargs,
+        )
+        model = model.eval()
+        if "8k" in model_path.lower():
+            model.config.max_sequence_length = 8192
+        tokenizer = AutoTokenizer.from_pretrained(
+            model_path, use_fast=False, trust_remote_code=True, revision=revision
+        )
+        return model, tokenizer
+
+
 register_llm_model_adapters(VicunaLLMAdapater)
 register_llm_model_adapters(ChatGLMAdapater)
 register_llm_model_adapters(GuanacoAdapter)
@@ -405,6 +453,7 @@ register_llm_model_adapters(Llama2Adapter)
 register_llm_model_adapters(BaichuanAdapter)
 register_llm_model_adapters(WizardLMAdapter)
 register_llm_model_adapters(LlamaCppAdapater)
+register_llm_model_adapters(InternLMAdapter)
 # TODO Default support vicuna, other model need to tests and Evaluate
 
 # just for test_py, remove this later

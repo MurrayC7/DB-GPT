@@ -1,11 +1,12 @@
 import datetime
 import traceback
 import warnings
+import logging
 from abc import ABC, abstractmethod
-from typing import Any, List
+from typing import Any, List, Dict
 
 from pilot.configs.config import Config
-from pilot.configs.model_config import LOGDIR
+from pilot.component import ComponentType
 from pilot.memory.chat_history.base import BaseChatHistoryMemory
 from pilot.memory.chat_history.duckdb_history import DuckdbHistoryMemory
 from pilot.memory.chat_history.file_history import FileHistoryMemory
@@ -13,10 +14,10 @@ from pilot.memory.chat_history.mem_history import MemHistoryMemory
 from pilot.prompts.prompt_new import PromptTemplate
 from pilot.scene.base_message import ModelMessage, ModelMessageRoleType
 from pilot.scene.message import OnceConversation
-from pilot.utils import build_logger, get_or_create_event_loop
+from pilot.utils import get_or_create_event_loop
 from pydantic import Extra
 
-logger = build_logger("BaseChat", LOGDIR + "BaseChat.log")
+logger = logging.getLogger(__name__)
 headers = {"User-Agent": "dbgpt Client"}
 CFG = Config()
 
@@ -32,13 +33,13 @@ class BaseChat(ABC):
 
         arbitrary_types_allowed = True
 
-    def __init__(
-        self, chat_mode, chat_session_id, current_user_input, select_param: Any = None
-    ):
-        self.chat_session_id = chat_session_id
-        self.chat_mode = chat_mode
-        self.current_user_input: str = current_user_input
-        self.llm_model = CFG.LLM_MODEL
+    def __init__(self, chat_param: Dict):
+        self.chat_session_id = chat_param["chat_session_id"]
+        self.chat_mode = chat_param["chat_mode"]
+        self.current_user_input: str = chat_param["current_user_input"]
+        self.llm_model = (
+            chat_param["model_name"] if chat_param["model_name"] else CFG.LLM_MODEL
+        )
         self.llm_echo = False
 
         ### load prompt template
@@ -55,14 +56,17 @@ class BaseChat(ABC):
         )
 
         ### can configurable storage methods
-        self.memory = DuckdbHistoryMemory(chat_session_id)
+        self.memory = DuckdbHistoryMemory(chat_param["chat_session_id"])
 
         self.history_message: List[OnceConversation] = self.memory.messages()
-        self.current_message: OnceConversation = OnceConversation(chat_mode.value())
-        if select_param:
-            if len(chat_mode.param_types()) > 0:
-                self.current_message.param_type = chat_mode.param_types()[0]
-            self.current_message.param_value = select_param
+        self.current_message: OnceConversation = OnceConversation(
+            self.chat_mode.value()
+        )
+        self.current_message.model_name = self.llm_model
+        if chat_param["select_param"]:
+            if len(self.chat_mode.param_types()) > 0:
+                self.current_message.param_type = self.chat_mode.param_types()[0]
+            self.current_message.param_value = chat_param["select_param"]
         self.current_tokens_used: int = 0
 
     class Config:
@@ -140,8 +144,11 @@ class BaseChat(ABC):
         logger.info(f"Requert: \n{payload}")
         ai_response_text = ""
         try:
-            from pilot.model.worker.manager import worker_manager
+            from pilot.model.cluster import WorkerManagerFactory
 
+            worker_manager = CFG.SYSTEM_APP.get_component(
+                ComponentType.WORKER_MANAGER_FACTORY, WorkerManagerFactory
+            ).create()
             async for output in worker_manager.generate_stream(payload):
                 yield output
         except Exception as e:
@@ -158,7 +165,11 @@ class BaseChat(ABC):
         logger.info(f"Request: \n{payload}")
         ai_response_text = ""
         try:
-            from pilot.model.worker.manager import worker_manager
+            from pilot.model.cluster import WorkerManagerFactory
+
+            worker_manager = CFG.SYSTEM_APP.get_component(
+                ComponentType.WORKER_MANAGER_FACTORY, WorkerManagerFactory
+            ).create()
 
             model_output = await worker_manager.generate(payload)
 

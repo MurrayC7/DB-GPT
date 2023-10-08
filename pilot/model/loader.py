@@ -3,6 +3,7 @@
 
 from typing import Optional, Dict
 
+import logging
 from pilot.configs.model_config import get_device
 from pilot.model.adapter import get_llm_model_adapter, BaseLLMAdaper, ModelType
 from pilot.model.parameter import (
@@ -12,12 +13,14 @@ from pilot.model.parameter import (
 )
 from pilot.utils import get_gpu_memory
 from pilot.utils.parameter_utils import EnvArgumentParser, _genenv_ignoring_key_case
-from pilot.logs import logger
+
+logger = logging.getLogger(__name__)
 
 
 def _check_multi_gpu_or_4bit_quantization(model_params: ModelParameters):
     # TODO: vicuna-v1.5 8-bit quantization info is slow
     # TODO: support wizardlm quantization, see: https://huggingface.co/WizardLM/WizardLM-13B-V1.2/discussions/5
+    # TODO: support internlm quantization
     model_name = model_params.model_name.lower()
     supported_models = ["llama", "baichuan", "vicuna"]
     return any(m in model_name for m in supported_models)
@@ -353,5 +356,6 @@ def llamacpp_loader(llm_adapter: BaseLLMAdaper, model_params: LlamaCppModelParam
 def proxyllm_loader(llm_adapter: BaseLLMAdaper, model_params: ProxyModelParameters):
     from pilot.model.proxy.llms.proxy_model import ProxyModel
 
+    logger.info("Load proxyllm")
     model = ProxyModel(model_params)
     return model, model
