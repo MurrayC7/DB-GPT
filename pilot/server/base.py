@@ -6,9 +6,10 @@ from typing import Optional, Any
 from dataclasses import dataclass, field
 
 from pilot.configs.config import Config
+from pilot.configs.model_config import PLUGINS_DIR
 from pilot.component import SystemApp
 from pilot.utils.parameter_utils import BaseParameters
-
+from pilot.base_modules.meta_data.meta_data import ddl_init_and_upgrade
 
 ROOT_PATH = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.append(ROOT_PATH)
@@ -19,7 +20,7 @@ def signal_handler(sig, frame):
     os._exit(0)
 
 
-def async_db_summery(system_app: SystemApp):
+def async_db_summary(system_app: SystemApp):
     from pilot.summary.db_summary_client import DBSummaryClient
 
     client = DBSummaryClient(system_app=system_app)
@@ -28,9 +29,7 @@ def async_db_summery(system_app: SystemApp):
 
 
 def server_init(args, system_app: SystemApp):
-    from pilot.commands.command_mange import CommandRegistry
-
-    from pilot.common.plugins import scan_plugins
+    from pilot.base_modules.agent.commands.command_mange import CommandRegistry
 
     # logger.info(f"args: {args}")
 
@@ -38,15 +37,15 @@ def server_init(args, system_app: SystemApp):
     cfg = Config()
     cfg.SYSTEM_APP = system_app
 
+    ddl_init_and_upgrade()
+
     # load_native_plugins(cfg)
     signal.signal(signal.SIGINT, signal_handler)
 
-    cfg.set_plugins(scan_plugins(cfg, cfg.debug_mode))
-
     # Loader plugins and commands
     command_categories = [
-        "pilot.commands.built_in.audio_text",
-        "pilot.commands.built_in.image_gen",
+        "pilot.base_modules.agent.commands.built_in.audio_text",
+        "pilot.base_modules.agent.commands.built_in.image_gen",
     ]
     # exclude commands
     command_categories = [
@@ -59,9 +58,9 @@ def server_init(args, system_app: SystemApp):
     cfg.command_registry = command_registry
 
     command_disply_commands = [
-        "pilot.commands.disply_type.show_chart_gen",
-        "pilot.commands.disply_type.show_table_gen",
-        "pilot.commands.disply_type.show_text_gen",
+        "pilot.base_modules.agent.commands.disply_type.show_chart_gen",
+        "pilot.base_modules.agent.commands.disply_type.show_table_gen",
+        "pilot.base_modules.agent.commands.disply_type.show_text_gen",
     ]
     command_disply_registry = CommandRegistry()
     for command in command_disply_commands:
@@ -79,7 +78,7 @@ def _create_model_start_listener(system_app: SystemApp):
         print("begin run _add_app_startup_event")
         conn_manage = ConnectManager(system_app)
         cfg.LOCAL_DB_MANAGE = conn_manage
-        async_db_summery(system_app)
+        async_db_summary(system_app)
 
     return startup_event
 
@@ -94,6 +93,19 @@ class WebWerverParameters(BaseParameters):
     )
     daemon: Optional[bool] = field(
         default=False, metadata={"help": "Run Webserver in background"}
+    )
+    controller_addr: Optional[str] = field(
+        default=None,
+        metadata={
+            "help": "The Model controller address to connect. If None, read model controller address from environment key `MODEL_SERVER`."
+        },
+    )
+    model_name: str = field(
+        default=None,
+        metadata={
+            "help": "The default model name to use. If None, read model name from environment key `LLM_MODEL`.",
+            "tags": "fixed",
+        },
     )
     share: Optional[bool] = field(
         default=False,
@@ -123,3 +135,15 @@ class WebWerverParameters(BaseParameters):
         },
     )
     light: Optional[bool] = field(default=False, metadata={"help": "enable light mode"})
+    log_file: Optional[str] = field(
+        default="dbgpt_webserver.log",
+        metadata={
+            "help": "The filename to store log",
+        },
+    )
+    tracer_file: Optional[str] = field(
+        default="dbgpt_webserver_tracer.jsonl",
+        metadata={
+            "help": "The filename to store tracer span records",
+        },
+    )

@@ -203,9 +203,9 @@ def get_cuda_version() -> str:
 
 
 def torch_requires(
-    torch_version: str = "2.0.0",
-    torchvision_version: str = "0.15.1",
-    torchaudio_version: str = "2.0.1",
+    torch_version: str = "2.0.1",
+    torchvision_version: str = "0.15.2",
+    torchaudio_version: str = "2.0.2",
 ):
     torch_pkgs = [
         f"torch=={torch_version}",
@@ -298,6 +298,7 @@ def core_requires():
     ]
 
     setup_spec.extras["framework"] = [
+        "fschat",
         "coloredlogs",
         "httpx",
         "sqlparse==0.4.4",
@@ -307,7 +308,8 @@ def core_requires():
         "auto-gpt-plugin-template",
         "gTTS==2.3.1",
         "langchain>=0.0.286",
-        "SQLAlchemy",
+        "SQLAlchemy==2.0.22",
+        "fastapi==0.98.0",
         "pymysql",
         "duckdb==0.8.1",
         "duckdb-engine",
@@ -396,15 +398,33 @@ def gpt4all_requires():
     setup_spec.extras["gpt4all"] = ["gpt4all"]
 
 
+def vllm_requires():
+    """
+    pip install "db-gpt[vllm]"
+    """
+    setup_spec.extras["vllm"] = ["vllm"]
+
+
+# def chat_scene():
+#     setup_spec.extras["chat"] = [
+#         ""
+#     ]
+
+
 def default_requires():
     """
     pip install "db-gpt[default]"
     """
     setup_spec.extras["default"] = [
-        "tokenizers==0.13.2",
+        "tokenizers==0.13.3",
         "accelerate>=0.20.3",
         "sentence-transformers",
         "protobuf==3.20.3",
+        "zhipuai",
+        "dashscope",
+        "chardet",
+        "GitPython",
+        "alembic==1.12.0",
     ]
     setup_spec.extras["default"] += setup_spec.extras["framework"]
     setup_spec.extras["default"] += setup_spec.extras["knowledge"]
@@ -435,6 +455,7 @@ all_vector_store_requires()
 all_datasource_requires()
 openai_requires()
 gpt4all_requires()
+vllm_requires()
 
 # must be last
 default_requires()
@@ -444,7 +465,7 @@ init_install_requires()
 setuptools.setup(
     name="db-gpt",
     packages=find_packages(exclude=("tests", "*.tests", "*.tests.*", "examples")),
-    version="0.3.9",
+    version="0.4.0",
     author="csunny",
     author_email="cfqcsunny@gmail.com",
     description="DB-GPT is an experimental open-source project that uses localized GPT large models to interact with your data and environment."

@@ -22,8 +22,10 @@ chat_factory = ChatFactory()
 
 
 class DBSummaryClient:
-    """db summary client, provide db_summary_embedding(put db profile and table profile summary into vector store)
+    """DB Summary client, provide db_summary_embedding(put db profile and table profile summary into vector store)
     , get_similar_tables method(get user query related tables info)
+    Args:
+        system_app (SystemApp): Main System Application class that manages the lifecycle and registration of components..
     """
 
     def __init__(self, system_app: SystemApp):
@@ -44,17 +46,16 @@ class DBSummaryClient:
         vector_store_config = {
             "vector_store_name": dbname + "_summary",
             "vector_store_type": CFG.VECTOR_STORE_TYPE,
-            "chroma_persist_path": KNOWLEDGE_UPLOAD_ROOT_PATH,
             "embeddings": embeddings,
         }
         embedding = StringEmbedding(
-            file_path=db_summary_client.get_summery(),
+            file_path=db_summary_client.get_summary(),
             vector_store_config=vector_store_config,
         )
         self.init_db_profile(db_summary_client, dbname, embeddings)
         if not embedding.vector_name_exist():
             if CFG.SUMMARY_CONFIG == "FAST":
-                for vector_table_info in db_summary_client.get_summery():
+                for vector_table_info in db_summary_client.get_summary():
                     embedding = StringEmbedding(
                         vector_table_info,
                         vector_store_config,
@@ -62,7 +63,7 @@ class DBSummaryClient:
                     embedding.source_embedding()
             else:
                 embedding = StringEmbedding(
-                    file_path=db_summary_client.get_summery(),
+                    file_path=db_summary_client.get_summary(),
                     vector_store_config=vector_store_config,
                 )
                 embedding.source_embedding()
@@ -73,7 +74,6 @@ class DBSummaryClient:
                 table_vector_store_config = {
                     "vector_store_name": dbname + "_" + table_name + "_ts",
                     "vector_store_type": CFG.VECTOR_STORE_TYPE,
-                    "chroma_persist_path": KNOWLEDGE_UPLOAD_ROOT_PATH,
                     "embeddings": embeddings,
                 }
                 embedding = StringEmbedding(
@@ -91,7 +91,6 @@ class DBSummaryClient:
         vector_store_config = {
             "vector_store_name": dbname + "_profile",
             "vector_store_type": CFG.VECTOR_STORE_TYPE,
-            "chroma_persist_path": KNOWLEDGE_UPLOAD_ROOT_PATH,
         }
         embedding_factory = CFG.SYSTEM_APP.get_component(
             "embedding_factory", EmbeddingFactory
@@ -112,9 +111,7 @@ class DBSummaryClient:
 
         vector_store_config = {
             "vector_store_name": dbname + "_summary",
-            "chroma_persist_path": KNOWLEDGE_UPLOAD_ROOT_PATH,
             "vector_store_type": CFG.VECTOR_STORE_TYPE,
-            "chroma_persist_path": KNOWLEDGE_UPLOAD_ROOT_PATH,
         }
         embedding_factory = CFG.SYSTEM_APP.get_component(
             "embedding_factory", EmbeddingFactory
@@ -142,17 +139,15 @@ class DBSummaryClient:
         for table in related_tables:
             vector_store_config = {
                 "vector_store_name": dbname + "_" + table + "_ts",
-                "chroma_persist_path": KNOWLEDGE_UPLOAD_ROOT_PATH,
                 "vector_store_type": CFG.VECTOR_STORE_TYPE,
-                "chroma_persist_path": KNOWLEDGE_UPLOAD_ROOT_PATH,
             }
             knowledge_embedding_client = EmbeddingEngine(
                 model_name=EMBEDDING_MODEL_CONFIG[CFG.EMBEDDING_MODEL],
                 vector_store_config=vector_store_config,
                 embedding_factory=embedding_factory,
             )
-            table_summery = knowledge_embedding_client.similar_search(query, 1)
-            related_table_summaries.append(table_summery[0].page_content)
+            table_summary = knowledge_embedding_client.similar_search(query, 1)
+            related_table_summaries.append(table_summary[0].page_content)
         return related_table_summaries
 
     def init_db_summary(self):
@@ -167,26 +162,37 @@ class DBSummaryClient:
                 )
 
     def init_db_profile(self, db_summary_client, dbname, embeddings):
+        """db profile initialization
+        Args:
+        db_summary_client(DBSummaryClient): DB Summary Client
+        dbname(str): dbname
+        embeddings(SourceEmbedding): embedding for read string document
+        """
         from pilot.embedding_engine.string_embedding import StringEmbedding
 
         vector_store_name = dbname + "_profile"
         profile_store_config = {
             "vector_store_name": vector_store_name,
-            "chroma_persist_path": KNOWLEDGE_UPLOAD_ROOT_PATH,
             "vector_store_type": CFG.VECTOR_STORE_TYPE,
             "embeddings": embeddings,
         }
         embedding = StringEmbedding(
-            file_path=db_summary_client.get_db_summery(),
+            file_path=db_summary_client.get_db_summary(),
             vector_store_config=profile_store_config,
         )
         if not embedding.vector_name_exist():
             docs = []
             docs.extend(embedding.read_batch())
             for table_summary in db_summary_client.table_info_json():
+                from langchain.text_splitter import RecursiveCharacterTextSplitter
+
+                text_splitter = RecursiveCharacterTextSplitter(
+                    chunk_size=len(table_summary), chunk_overlap=100
+                )
                 embedding = StringEmbedding(
-                    table_summary,
-                    profile_store_config,
+                    file_path=table_summary,
+                    vector_store_config=profile_store_config,
+                    text_splitter=text_splitter,
                 )
                 docs.extend(embedding.read_batch())
             embedding.index_to_store(docs)

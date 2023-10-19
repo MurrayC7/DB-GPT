@@ -46,6 +46,18 @@ class ModelControllerParameters(BaseParameters):
             ],
         },
     )
+    log_file: Optional[str] = field(
+        default="dbgpt_model_controller.log",
+        metadata={
+            "help": "The filename to store log",
+        },
+    )
+    tracer_file: Optional[str] = field(
+        default="dbgpt_model_controller_tracer.jsonl",
+        metadata={
+            "help": "The filename to store tracer span records",
+        },
+    )
 
 
 @dataclass
@@ -63,6 +75,13 @@ class ModelWorkerParameters(BaseModelParameters):
     worker_class: Optional[str] = field(
         default=None,
         metadata={"help": "Model worker class, pilot.model.cluster.DefaultModelWorker"},
+    )
+    model_type: Optional[str] = field(
+        default="huggingface",
+        metadata={
+            "help": "Model type: huggingface, llama.cpp, proxy and vllm",
+            "tags": "fixed",
+        },
     )
     host: Optional[str] = field(
         default="0.0.0.0", metadata={"help": "Model worker deploy host"}
@@ -115,6 +134,18 @@ class ModelWorkerParameters(BaseModelParameters):
             ],
         },
     )
+    log_file: Optional[str] = field(
+        default="dbgpt_model_worker_manager.log",
+        metadata={
+            "help": "The filename to store log",
+        },
+    )
+    tracer_file: Optional[str] = field(
+        default="dbgpt_model_worker_manager_tracer.jsonl",
+        metadata={
+            "help": "The filename to store tracer span records",
+        },
+    )
 
 
 @dataclass
@@ -163,7 +194,7 @@ class ModelParameters(BaseModelParameters):
     model_type: Optional[str] = field(
         default="huggingface",
         metadata={
-            "help": "Model type, huggingface, llama.cpp and proxy",
+            "help": "Model type: huggingface, llama.cpp, proxy and vllm",
             "tags": "fixed",
         },
     )
@@ -275,9 +306,30 @@ class ProxyModelParameters(BaseModelParameters):
             "help": "Proxy server url, such as: https://api.openai.com/v1/chat/completions"
         },
     )
+
     proxy_api_key: str = field(
         metadata={"tags": "privacy", "help": "The api key of current proxy LLM"},
     )
+
+    proxy_api_base: str = field(
+        default=None,
+        metadata={
+            "help": "The base api address, such as: https://api.openai.com/v1. If None, we will use proxy_api_base first"
+        },
+    )
+
+    proxy_api_type: Optional[str] = field(
+        default=None,
+        metadata={
+            "help": "The api type of current proxy the current proxy model, if you use Azure, it can be: azure"
+        },
+    )
+
+    proxy_api_version: Optional[str] = field(
+        default=None,
+        metadata={"help": "The api version of current proxy the current model"},
+    )
+
     http_proxy: Optional[str] = field(
         default=os.environ.get("http_proxy") or os.environ.get("https_proxy"),
         metadata={"help": "The http or https proxy to use openai"},
@@ -292,7 +344,7 @@ class ProxyModelParameters(BaseModelParameters):
     model_type: Optional[str] = field(
         default="proxy",
         metadata={
-            "help": "Model type, huggingface, llama.cpp and proxy",
+            "help": "Model type: huggingface, llama.cpp, proxy and vllm",
             "tags": "fixed",
         },
     )

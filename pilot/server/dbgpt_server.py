@@ -5,9 +5,8 @@ from typing import List
 
 ROOT_PATH = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.append(ROOT_PATH)
-import signal
 from pilot.configs.config import Config
-from pilot.configs.model_config import LLM_MODEL_CONFIG, EMBEDDING_MODEL_CONFIG
+from pilot.configs.model_config import LLM_MODEL_CONFIG, EMBEDDING_MODEL_CONFIG, LOGDIR
 from pilot.component import SystemApp
 
 from pilot.server.base import (
@@ -20,6 +19,7 @@ from pilot.server.component_configs import initialize_components
 from fastapi.staticfiles import StaticFiles
 from fastapi import FastAPI, applications
 from fastapi.openapi.docs import get_swagger_ui_html
+from fastapi.openapi.utils import get_openapi
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from pilot.server.knowledge.api import router as knowledge_router
@@ -31,13 +31,20 @@ from pilot.openapi.api_v1.api_v1 import router as api_v1
 from pilot.openapi.base import validation_exception_handler
 from pilot.openapi.api_v1.editor.api_editor_v1 import router as api_editor_route_v1
 from pilot.openapi.api_v1.feedback.api_fb_v1 import router as api_fb_v1
-from pilot.commands.disply_type.show_chart_gen import static_message_img_path
+from pilot.base_modules.agent.commands.disply_type.show_chart_gen import (
+    static_message_img_path,
+)
 from pilot.model.cluster import initialize_worker_manager_in_client
 from pilot.utils.utils import (
     setup_logging,
     _get_logging_level,
     logging_str_to_uvicorn_level,
 )
+from pilot.utils.tracer import root_tracer, initialize_tracer, SpanType, SpanTypeRunName
+from pilot.utils.parameter_utils import _get_dict_from_obj
+from pilot.utils.system_utils import get_system_info
+from pilot.base_modules.agent.controller import router as agent_route
+
 
 static_file_path = os.path.join(os.getcwd(), "server/static")
 
@@ -53,9 +60,9 @@ def swagger_monkey_patch(*args, **kwargs):
     )
 
 
+app = FastAPI()
 applications.get_swagger_ui_html = swagger_monkey_patch
 
-app = FastAPI()
 system_app = SystemApp(app)
 
 origins = ["*"]
@@ -70,16 +77,14 @@ app.add_middleware(
 )
 
 
-app.include_router(api_v1, prefix="/api")
-app.include_router(knowledge_router, prefix="/api")
-app.include_router(api_editor_route_v1, prefix="/api")
-app.include_router(llm_manage_api, prefix="/api")
-app.include_router(api_fb_v1, prefix="/api")
+app.include_router(api_v1, prefix="/api", tags=["Chat"])
+app.include_router(api_editor_route_v1, prefix="/api", tags=["Editor"])
+app.include_router(llm_manage_api, prefix="/api", tags=["LLM Manage"])
+app.include_router(api_fb_v1, prefix="/api", tags=["FeedBack"])
 
-# app.include_router(api_v1)
-app.include_router(knowledge_router)
-app.include_router(prompt_router)
-# app.include_router(api_editor_route_v1)
+
+app.include_router(knowledge_router, tags=["Knowledge"])
+app.include_router(prompt_router, tags=["Prompt"])
 
 
 def mount_static_files(app):
@@ -98,22 +103,26 @@ def mount_static_files(app):
 app.add_exception_handler(RequestValidationError, validation_exception_handler)
 
 
+def _get_webserver_params(args: List[str] = None):
+    from pilot.utils.parameter_utils import EnvArgumentParser
+
+    parser: argparse.ArgumentParser = EnvArgumentParser.create_argparse_option(
+        WebWerverParameters
+    )
+    return WebWerverParameters(**vars(parser.parse_args(args=args)))
+
+
 def initialize_app(param: WebWerverParameters = None, args: List[str] = None):
     """Initialize app
     If you use gunicorn as a process manager, initialize_app can be invoke in `on_starting` hook.
     """
     if not param:
-        from pilot.utils.parameter_utils import EnvArgumentParser
-
-        parser: argparse.ArgumentParser = EnvArgumentParser.create_argparse_option(
-            WebWerverParameters
-        )
-        param = WebWerverParameters(**vars(parser.parse_args(args=args)))
+        param = _get_webserver_params(args)
 
     if not param.log_level:
         param.log_level = _get_logging_level()
     setup_logging(
-        "pilot", logging_level=param.log_level, logger_filename="dbgpt_webserver.log"
+        "pilot", logging_level=param.log_level, logger_filename=param.log_file
     )
     # Before start
     system_app.before_start()
@@ -127,14 +136,16 @@ def initialize_app(param: WebWerverParameters = None, args: List[str] = None):
     model_start_listener = _create_model_start_listener(system_app)
     initialize_components(param, system_app, embedding_model_name, embedding_model_path)
 
-    model_path = LLM_MODEL_CONFIG[CFG.LLM_MODEL]
+    model_name = param.model_name or CFG.LLM_MODEL
+
+    model_path = LLM_MODEL_CONFIG.get(model_name)
     if not param.light:
         print("Model Unified Deployment Mode!")
         if not param.remote_embedding:
             embedding_model_name, embedding_model_path = None, None
         initialize_worker_manager_in_client(
             app=app,
-            model_name=CFG.LLM_MODEL,
+            model_name=model_name,
             model_path=model_path,
             local_port=param.port,
             embedding_model_name=embedding_model_name,
@@ -146,12 +157,13 @@ def initialize_app(param: WebWerverParameters = None, args: List[str] = None):
         CFG.NEW_SERVER_MODE = True
     else:
         # MODEL_SERVER is controller address now
+        controller_addr = param.controller_addr or CFG.MODEL_SERVER
         initialize_worker_manager_in_client(
             app=app,
-            model_name=CFG.LLM_MODEL,
+            model_name=model_name,
             model_path=model_path,
             run_locally=False,
-            controller_addr=CFG.MODEL_SERVER,
+            controller_addr=controller_addr,
             local_port=param.port,
             start_listener=model_start_listener,
             system_app=system_app,
@@ -174,8 +186,21 @@ def run_uvicorn(param: WebWerverParameters):
 
 
 def run_webserver(param: WebWerverParameters = None):
-    param = initialize_app(param)
-    run_uvicorn(param)
+    if not param:
+        param = _get_webserver_params()
+    initialize_tracer(system_app, os.path.join(LOGDIR, param.tracer_file))
+
+    with root_tracer.start_span(
+        "run_webserver",
+        span_type=SpanType.RUN,
+        metadata={
+            "run_service": SpanTypeRunName.WEBSERVER,
+            "params": _get_dict_from_obj(param),
+            "sys_infos": _get_dict_from_obj(get_system_info()),
+        },
+    ):
+        param = initialize_app(param)
+        run_uvicorn(param)
 
 
 if __name__ == "__main__":

@@ -1,21 +1,19 @@
 import datetime
 import traceback
 import warnings
+import asyncio
 import logging
 from abc import ABC, abstractmethod
 from typing import Any, List, Dict
 
 from pilot.configs.config import Config
 from pilot.component import ComponentType
-from pilot.memory.chat_history.base import BaseChatHistoryMemory
-from pilot.memory.chat_history.duckdb_history import DuckdbHistoryMemory
-from pilot.memory.chat_history.file_history import FileHistoryMemory
-from pilot.memory.chat_history.mem_history import MemHistoryMemory
 from pilot.prompts.prompt_new import PromptTemplate
 from pilot.scene.base_message import ModelMessage, ModelMessageRoleType
 from pilot.scene.message import OnceConversation
 from pilot.utils import get_or_create_event_loop
 from pydantic import Extra
+from pilot.memory.chat_history.chat_hisotry_factory import ChatHistory
 
 logger = logging.getLogger(__name__)
 headers = {"User-Agent": "dbgpt Client"}
@@ -54,9 +52,9 @@ class BaseChat(ABC):
                 proxyllm_backend=CFG.PROXYLLM_BACKEND,
             )
         )
-
+        chat_history_fac = ChatHistory()
         ### can configurable storage methods
-        self.memory = DuckdbHistoryMemory(chat_param["chat_session_id"])
+        self.memory = chat_history_fac.get_store_instance(chat_param["chat_session_id"])
 
         self.history_message: List[OnceConversation] = self.memory.messages()
         self.current_message: OnceConversation = OnceConversation(
@@ -136,6 +134,16 @@ class BaseChat(ABC):
         # print(payload)
         return payload
 
+    def stream_plugin_call(self, text):
+        return text
+
+    async def check_iterator_end(iterator):
+        try:
+            await asyncio.anext(iterator)
+            return False  # 迭代器还有下一个元素
+        except StopAsyncIteration:
+            return True  # 迭代器已经执行结束
+
     async def stream_call(self):
         # TODO Retry when server connection error
         payload = self.__call_base()
@@ -150,7 +158,15 @@ class BaseChat(ABC):
                 ComponentType.WORKER_MANAGER_FACTORY, WorkerManagerFactory
             ).create()
             async for output in worker_manager.generate_stream(payload):
-                yield output
+                ### Plug-in research in result generation
+                msg = self.prompt_template.output_parser.parse_model_stream_resp_ex(
+                    output, self.skip_echo_len
+                )
+                view_msg = self.stream_plugin_call(msg)
+                view_msg = view_msg.replace("\n", "\\n")
+                yield view_msg
+            self.current_message.add_ai_message(msg)
+            self.current_message.add_view_message(view_msg)
         except Exception as e:
             print(traceback.format_exc())
             logger.error("model response parase faild！" + str(e))
@@ -158,7 +174,7 @@ class BaseChat(ABC):
                 f"""<span style=\"color:red\">ERROR!</span>{str(e)}\n  {ai_response_text} """
             )
             ### store current conversation
-            self.memory.append(self.current_message)
+        self.memory.append(self.current_message)
 
     async def nostream_call(self):
         payload = self.__call_base()
@@ -195,6 +211,7 @@ class BaseChat(ABC):
             view_message = self.prompt_template.output_parser.parse_view_response(
                 speak_to_user, result
             )
+            view_message = view_message.replace("\n", "\\n")
             self.current_message.add_view_message(view_message)
         except Exception as e:
             print(traceback.format_exc())
@@ -343,7 +360,10 @@ class BaseChat(ABC):
                 )
             if len(self.history_message) > self.chat_retention_rounds:
                 for first_message in self.history_message[0]["messages"]:
-                    if not first_message["type"] in [ModelMessageRoleType.VIEW]:
+                    if not first_message["type"] in [
+                        ModelMessageRoleType.VIEW,
+                        ModelMessageRoleType.SYSTEM,
+                    ]:
                         message_type = first_message["type"]
                         message_content = first_message["data"]["content"]
                         history_text += (
